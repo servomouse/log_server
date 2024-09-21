@@ -1,28 +1,32 @@
 import asyncio
-import websockets
+import websockets  # pip install websockets
 import json
 import signal
 import os
 
+ws_port = 8765
 buffers = {}
 buffer_size = 1 * 1024 * 1024  # 1 MB
 
 async def handle_connection(websocket, path):
 	async for message in websocket:
 		data = json.loads(message)
-		filename = data['filename']
+		filename = data['path']
 		log_string = data['log_string']
+		print(f"Received data: {data}")
+		if filename not in buffers:
+			buffers[filename] = bytearray()
 
-	if filename not in buffers:
-		buffers[filename] = bytearray()
+		buffers[filename].extend(log_string.encode('utf-8'))
 
-	buffers[filename].extend(log_string.encode('utf-8'))
-
-	if len(buffers[filename]) >= buffer_size:
-		flush_buffer(filename)
+		if len(buffers[filename]) >= buffer_size:
+			flush_buffer(filename)
     
 def flush_buffer(filename):
 	if filename in buffers and buffers[filename]:
+		directory = os.path.dirname(filename)
+		if not os.path.exists(directory):
+			os.makedirs(directory)
 		with open(filename, 'ab') as f:
 			f.write(buffers[filename])
 			buffers[filename] = bytearray()
@@ -39,8 +43,8 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 async def main():
-	async with websockets.serve(handle_connection, "localhost", 8765):
-	await asyncio.Future()  # Run forever
+	async with websockets.serve(handle_connection, "localhost", ws_port):
+		await asyncio.Future()  # Run forever
 
 if __name__ == "__main__":
 	asyncio.run(main())
