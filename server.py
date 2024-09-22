@@ -10,7 +10,7 @@ buffer_size = 1 * 1024 * 1024  # 1 MB
 
 async def handle_connection(websocket, path):
 	async for message in websocket:
-		print(f"Received data: {message}")
+		# print(f"Received data: {message}")
 		data = json.loads(message)
 		filename = data['path']
 		log_string = data['log_string']
