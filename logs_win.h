@@ -5,6 +5,6 @@
 
 // Compile with the  -lws2_32 flag!!!
 
-void init_connection(uint32_t port);
-void send_data(uint8_t *log_file, uint8_t *message);
-void close_connection(void);
+void log_server_init(uint32_t port);
+void log_server_send(const char *log_file, char *message);
+void log_server_close(void);
