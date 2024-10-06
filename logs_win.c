@@ -8,7 +8,7 @@
 
 #define BUFFER_SIZE 1024
 
-static SOCKET sockfd;
+static SOCKET sockfd = INVALID_SOCKET;
 
 int n_times = 1;
 HANDLE *h_threads;
@@ -105,6 +105,10 @@ void log_server_init(uint32_t port) {
 }
 
 void log_server_send(const char *log_file, char *message) {
+    if(sockfd == INVALID_SOCKET) {
+        printf("ERROR: connection to log server failed");
+        return;
+    }
     // Prepare WebSocket frame
     char buffer[BUFFER_SIZE] = {0};
     size_t msg_len = snprintf(&buffer[6], sizeof(buffer), "{\"path\":\"%s\",\"log_string\":\"%s\"}", log_file, message);
@@ -121,7 +125,7 @@ void log_server_send(const char *log_file, char *message) {
     memcpy(&buffer[2], mask, 4);
     mask_payload((uint8_t *)&buffer[6], msg_len, mask);    // Mask the payload
     send(sockfd, buffer, msg_len + 6, 0);
-    if(term == 1) exit(1);
+    // if(term == 1) exit(1);
 }
 
 void log_server_close() {
@@ -135,6 +139,9 @@ void log_server_close() {
     }
     memcpy(&buffer[2], mask, 4);
     send(sockfd, buffer, 6, 0);
+    if(SOCKET_ERROR == shutdown(sockfd, SD_SEND)) {
+        printf("Websocket shutdown failed with error %d\n", WSAGetLastError());
+    }
 
     // Close connection
     closesocket(sockfd);
